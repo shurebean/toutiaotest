@@ -1,0 +1,35 @@
+# 前端生产环境 Dockerfile
+FROM node:18-alpine AS builder
+
+WORKDIR /app
+
+# 安装依赖
+COPY package*.json ./
+RUN npm ci
+
+# 复制源代码
+COPY . .
+
+# 构建生产版本
+RUN npm run build
+
+# 运行时镜像
+FROM node:18-alpine
+
+WORKDIR /app
+
+# 安装serve
+RUN npm install -g serve
+
+# 复制构建产物
+COPY --from=builder /app/dist ./dist
+
+# 暴露端口
+EXPOSE 3000
+
+# 健康检查
+HEALTHCHECK --interval=30s --timeout=10s --retries=3 \
+    CMD wget --quiet --tries=1 --spider http://localhost:3000 || exit 1
+
+# 启动应用
+CMD ["serve", "-l", "3000", "-s", "dist"]

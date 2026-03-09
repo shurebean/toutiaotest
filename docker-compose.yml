@@ -1,0 +1,61 @@
+version: '3.8'
+
+services:
+  backend:
+    build: 
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: toutiao-backend
+    ports:
+      - "5000:5000"
+    environment:
+      - NODE_ENV=production
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - SCRAPE_INTERVAL_HOURS=${SCRAPE_INTERVAL_HOURS:-2}
+    depends_on:
+      - mongodb
+    restart: unless-stopped
+    volumes:
+      - ./backend:/app
+      - /app/node_modules
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: toutiao-frontend
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+  mongodb:
+    image: mongo:latest
+    container_name: toutiao-mongo
+    volumes:
+      - mongodb_data:/data/db
+    ports:
+      - "27017:27017"
+    restart: unless-stopped
+
+  nginx:
+    image: nginx:latest
+    container_name: toutiao-nginx
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./ssl:/etc/nginx/ssl:ro
+    ports:
+      - "443:443"
+    depends_on:
+      - frontend
+      - backend
+    restart: unless-stopped
+
+volumes:
+  mongodb_data:
+    driver: local
+
+networks:
+  default:
+    name: toutiao-network
