@@ -22,8 +22,9 @@ async function scrapeToutiaoHot() {
     const news = [];
     const seen = new Set();
 
-    if (data && data.data && data.data.list) {
-      data.data.list.forEach((item, index) => {
+    // API返回格式: { data: [...], fixed_top_data: [...], ... }
+    if (data && data.data && Array.isArray(data.data)) {
+      data.data.forEach((item, index) => {
         if (index >= 30) return;
 
         const title = item.Title || item.title;
