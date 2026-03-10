@@ -174,18 +174,9 @@ function startScheduler() {
     scheduled: true
   });
 
-  // 每周日 00:00 清理上一周的新闻摘要
-  const cleanupJob = cron.schedule('0 0 * * 0', () => {
-    log('🧹 执行每周清理任务...');
-    cleanupOldNews();
-  }, {
-    scheduled: true
-  });
-
   log('🕰️  定时任务调度器已启动');
   log(`   Cron表达式: ${cronPattern} (每小时检查)`);
   log(`   推送时间: 每天 ${SCHEDULE_TIMES.join(':00、')}:00`);
-  log(`   清理时间: 每周日 00:00`);
   log(`   飞书群组: ${FEISHU_GROUP_ID}`);
   log(`   日志文件: ${LOG_FILE}`);
   log(`   新闻目录: ${NEWS_DIR}`);
@@ -197,39 +188,6 @@ function startScheduler() {
     runScrapeTask();
   } else {
     log(`当前时间不是推送时间点，将在 ${SCHEDULE_TIMES.join(':00、')}:00 自动执行`);
-  }
-}
-
-// 清理上一周的新闻摘要
-function cleanupOldNews() {
-  try {
-    if (!fs.existsSync(NEWS_DIR)) {
-      return;
-    }
-
-    const files = fs.readdirSync(NEWS_DIR);
-    const now = new Date();
-    const oneWeekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-    let deletedCount = 0;
-
-    files.forEach(file => {
-      if (!file.endsWith('.md')) return;
-
-      const filePath = path.join(NEWS_DIR, file);
-      const stats = fs.statSync(filePath);
-
-      if (stats.mtime < oneWeekAgo) {
-        fs.unlinkSync(filePath);
-        deletedCount++;
-        log(`🗑️  删除旧新闻摘要: ${file}`);
-      }
-    });
-
-    if (deletedCount > 0) {
-      log(`✅ 清理完成，删除了 ${deletedCount} 个旧新闻摘要文件`);
-    }
-  } catch (error) {
-    log(`❌ 清理旧新闻失败: ${error.message}`, 'ERROR');
   }
 }
 

@@ -288,7 +288,7 @@ async function scrapeToutiao() {
 }
 
 async function saveToDatabase(news) {
-  console.log('💾 保存到数据库...');
+  console.log('💾 保存到数据库（不保留历史记录）...');
 
   const fs = require('fs');
   const path = require('path');
@@ -301,11 +301,6 @@ async function saveToDatabase(news) {
   const dbPath = path.join(dataDir, 'toutiao-news.json');
   const timestamp = new Date().toISOString();
 
-  let existing = [];
-  if (fs.existsSync(dbPath)) {
-    existing = JSON.parse(fs.readFileSync(dbPath, 'utf8'));
-  }
-
   const newEntry = {
     timestamp: timestamp,
     source: news[0]?.source || 'mixed',
@@ -313,20 +308,16 @@ async function saveToDatabase(news) {
     count: news.length
   };
 
-  existing.unshift(newEntry);
-  if (existing.length > 10) {
-    existing = existing.slice(0, 10);
-  }
-
-  fs.writeFileSync(dbPath, JSON.stringify(existing, null, 2));
-  console.log(`✅ 已保存到 ${dbPath}\n`);
+  // 只保存最新的数据，覆盖之前的记录
+  fs.writeFileSync(dbPath, JSON.stringify([newEntry], null, 2));
+  console.log(`✅ 已保存最新数据到 ${dbPath}\n`);
 
   return newEntry;
 }
 
-// 保存新闻摘要到 /home/toutiaotest/news
+// 保存新闻摘要到 /home/toutiaotest/news（不保留历史记录）
 async function saveNewsSummary(news, timestamp) {
-  console.log('💾 保存新闻摘要到 /home/toutiaotest/news...');
+  console.log('💾 保存新闻摘要到 /home/toutiaotest/news（不保留历史记录）...');
 
   const fs = require('fs');
   const path = require('path');
@@ -336,10 +327,9 @@ async function saveNewsSummary(news, timestamp) {
     fs.mkdirSync(newsDir, { recursive: true });
   }
 
+  // 固定文件名，每次都覆盖
+  const summaryPath = path.join(newsDir, 'toutiao-hot.md');
   const date = new Date(timestamp);
-  const dateStr = date.toISOString().split('T')[0];
-  const timeStr = date.toISOString().split('T')[1].substring(0, 5).replace(':', '-');
-  const summaryPath = path.join(newsDir, `toutiao-hot_${dateStr}_${timeStr}.md`);
 
   let content = `# 热点新闻摘要\n\n`;
   content += `**更新时间：** ${date.toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai' })}\n`;
