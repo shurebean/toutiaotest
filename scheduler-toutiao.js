@@ -209,28 +209,27 @@ function main() {
       break;
     
     case 'push':
-      log('🔄 推送最新新闻到飞书...');
-      const fs = require('fs');
-      const path = require('path');
-      const dbPath = path.join(__dirname, 'backend/data/toutiao-news.json');
-      
-      try {
-        if (fs.existsSync(dbPath)) {
-          const data = JSON.parse(fs.readFileSync(dbPath, 'utf8'));
-          if (data && data.length > 0) {
-            pushToFeishu(data[0]).then(() => process.exit(0));
+      (async () => {
+        log('🔄 先抓取最新新闻，然后推送到飞书...');
+        // 先抓取最新数据
+        const scrapeResult = await scrapeToutiao();
+        
+        if (scrapeResult && scrapeResult.count > 0) {
+          log(`✅ 抓取成功: ${scrapeResult.count} 条新闻`);
+          // 推送刚抓取的数据
+          const pushResult = await pushToFeishu(scrapeResult);
+          if (pushResult) {
+            log('✅ 推送完成');
+            process.exit(0);
           } else {
-            log('没有找到新闻数据', 'WARN');
+            log('❌ 推送失败', 'ERROR');
             process.exit(1);
           }
         } else {
-          log('新闻数据库文件不存在', 'WARN');
+          log('❌ 抓取失败或无数据', 'ERROR');
           process.exit(1);
         }
-      } catch (error) {
-        log(`读取数据失败: ${error.message}`, 'ERROR');
-        process.exit(1);
-      }
+      })();
       break;
     
     case 'status':
